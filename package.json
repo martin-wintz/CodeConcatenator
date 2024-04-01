@@ -1,0 +1,22 @@
+{
+  "name": "codeconcatenator",
+  "version": "1.0.0",
+  "description": "Easily select files in your project and concatenate their source code for pasting into ChatBots",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/martin-wintz/CodeConcatenator.git"
+  },
+  "author": "Martin Wintz",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/martin-wintz/CodeConcatenator/issues"
+  },
+  "homepage": "https://github.com/martin-wintz/CodeConcatenator#readme",
+  "devDependencies": {
+    "electron": "^29.1.6"
+  }
+}
