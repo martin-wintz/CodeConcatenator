@@ -1,17 +1,15 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/joy';
 import Sidebar from './components/Sidebar';
 import CodeDisplay from './components/CodeDisplay';
 
 const App = () => {
   const [fileList, setFileList] = useState([]);
-  const fileListRef = useRef([]);
 
   useEffect(() => {
     const fetchFileList = async () => {
       const list = await window.api.getFileList();
       setFileList(list);
-      fileListRef.current = list;
     };
 
     fetchFileList();
@@ -19,14 +17,12 @@ const App = () => {
     window.api.subscribeToFileChanges(handleFileChanges);
   }, []);
 
-  useEffect(() => {
-    fileListRef.current = fileList;
-  }, [fileList]);
-
   const handleFileChanges = async (updatedFileList) => {
-    const mergedFileList = mergeFileLists(fileListRef.current, updatedFileList);
-    await updateFileContents(mergedFileList);
-    setFileList(mergedFileList);
+    setFileList(currentFileList => {
+      const mergedFileList = mergeFileLists(currentFileList, updatedFileList);
+      updateFileContents(mergedFileList);
+      return mergedFileList;
+    });
   };
 
   const updateFileItem = (oldItem, newItem) => {
@@ -50,17 +46,17 @@ const App = () => {
     return mergedList;
   };
 
-  const updateFileContents = async (fileList) => {
-    const updateContent = async (file) => {
+  const updateFileContents = (fileList) => {
+    const updateContent = (file) => {
       if (file.checked) {
-        file.content = await window.api.readFile(file.path);
+        file.content = window.api.readFile(file.path);
       }
       if (file.children) {
-        await Promise.all(file.children.map(updateContent));
+        file.children.forEach(updateContent);
       }
     };
-
-    await Promise.all(fileList.map(updateContent));
+  
+    fileList.forEach(updateContent);
   };
 
   return (
