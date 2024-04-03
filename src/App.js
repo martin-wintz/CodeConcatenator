@@ -31,20 +31,18 @@ const App = () => {
   };
 
   const mergeFileLists = (oldList, newList) => {
-    const mergedList = [...newList];
-
-    oldList.forEach((oldItem) => {
-      const newItem = mergedList.find((item) => item.path === oldItem.path);
-      if (newItem) {
+    const oldItemsMap = new Map(oldList.map(item => [item.path, item]));
+    return newList.map(newItem => {
+      const oldItem = oldItemsMap.get(newItem.path);
+      if (oldItem) {
         updateFileItem(oldItem, newItem);
         if (oldItem.children && newItem.children) {
           newItem.children = mergeFileLists(oldItem.children, newItem.children);
         }
       }
+      return newItem;
     });
-
-    return mergedList;
-  };
+  };  
 
   const updateFileContents = (fileList) => {
     const updateContent = (file) => {
