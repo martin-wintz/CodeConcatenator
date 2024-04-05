@@ -6,7 +6,9 @@ Runs locally on Windows, Mac, or Linux. Powered by [Electron](https://www.electr
 
 #### Features
 
-* Watches for changes in your directory and automatically updates the contents
+* View your files in a tree structure and select them to load their contents into a text area
+* ASCII mode for the file tree so you can paste in your directory/file structure as well
+* Watches for changes in your working directory and updates both contents and file tree
 * Respects your .gitignore
 * Token estimation
 

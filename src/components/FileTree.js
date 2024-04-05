@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Typography, IconButton, Checkbox } from '@mui/joy';
+import React, { useState } from 'react';
+import { Box, Button, Typography, IconButton, Checkbox } from '@mui/joy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import useCopyToClipboard from '../hooks/useCopyToClipboard';
+import { fadeOut } from '../animations';
 
-const FileTree = ({ fileList, setFileList, readFile }) => {
+const FileTree = ({ fileList, setFileList, readFile, asciiMode }) => {
+  const [copyMessage, copyToClipboard] = useCopyToClipboard();
 
   const handleToggleExpand = (directory) => {
     directory.collapsed = !directory.collapsed;
@@ -16,6 +19,30 @@ const FileTree = ({ fileList, setFileList, readFile }) => {
       file.content = readFile(file.path);
     }
     setFileList([...fileList]);
+  };
+
+  const renderAsciiTree = (files, level = 0) => {
+    return files
+      .map((file, index) => {
+        const isLast = index === files.length - 1;
+        const prefix = isLast ? '└── ' : '├── ';
+        const checkbox = file.checked ? '[x] ' : '[ ] ';
+
+        let line = '  '.repeat(level) + prefix + checkbox + file.name;
+
+        if (file.children) {
+          line += '/';
+          const childLines = renderAsciiTree(file.children, level + 1);
+          line += '\n' + childLines;
+        }
+
+        return line;
+      })
+      .join('\n');
+  };
+
+  const handleCopy = () => {
+    copyToClipboard(renderAsciiTree(fileList));
   };
 
   const renderFileTree = (files, level = 0) => {
@@ -34,7 +61,7 @@ const FileTree = ({ fileList, setFileList, readFile }) => {
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', ml: (level + 1) * 2 }}>
             <Checkbox
-              style={{ marginRight: 8}}
+              style={{ marginRight: 8 }}
               checked={file.checked || false}
               onChange={() => handleCheckChange(file)}
             />
@@ -45,7 +72,38 @@ const FileTree = ({ fileList, setFileList, readFile }) => {
     ));
   };
 
-  return <Box sx={{ p: 2 }}>{renderFileTree(fileList)}</Box>;
+  return (
+    <Box sx={{ p: 2 }}>
+      {asciiMode ? (
+        <>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 1 }}>
+            <Button variant="solid" onClick={handleCopy}>
+              Copy
+            </Button>
+            {copyMessage && (
+              <Typography
+                sx={{
+                  ml: 2,
+                  animation: `${fadeOut} 1s ease-in-out`,
+                  animationFillMode: 'forwards',
+                }}
+              >
+                {copyMessage}
+              </Typography>
+            )}
+          </Box>
+          <Box
+            component="textarea"
+            sx={{ width: '100%', height: 400, fontFamily: 'monospace', whiteSpace: 'pre' }}
+            value={renderAsciiTree(fileList)}
+            readOnly
+          />
+        </>
+      ) : (
+        renderFileTree(fileList)
+      )}
+    </Box>
+  );
 };
 
 export default FileTree;

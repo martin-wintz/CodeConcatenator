@@ -2,18 +2,11 @@ import React, { useState } from 'react';
 import { Box, Button, Typography } from '@mui/joy';
 import { keyframes } from '@mui/system';
 import TokenEstimate from './TokenEstimate';
-
-const fadeOut = keyframes`
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-`;
+import useCopyToClipboard from '../hooks/useCopyToClipboard';
+import { fadeOut } from '../animations';
 
 const CodeDisplay = ({ fileList }) => {
-  const [copyMessage, setCopyMessage] = useState('');
+  const [copyMessage, copyToClipboard] = useCopyToClipboard();
 
   const getCheckedFiles = (files) => {
     const checkedFiles = [];
@@ -32,18 +25,10 @@ const CodeDisplay = ({ fileList }) => {
   const checkedFiles = getCheckedFiles(fileList);
   const content = checkedFiles.map((file) => file.path + '\n-----\n' + file.content).join('\n\n');
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopyMessage('Copied!');
-      setTimeout(() => {
-        setCopyMessage('');
-      }, 2000);
-    } catch (err) {
-      console.error('Failed to copy content: ', err);
-    }
-  };
-
+  const handleCopy = () => {
+    copyToClipboard(content);
+  }
+  
   return (
     <Box>
       <Box component="textarea" sx={{ width: '100%', height: 400, mt: 2 }} value={content} readOnly />
