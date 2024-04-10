@@ -80,7 +80,7 @@ function buildFileTree(files) {
 
     const fileItem = {
       name: parsedPath.base,
-      path: path.join(process.cwd(), file),
+      path: file,
       checked: false,
       content: null,
     };
