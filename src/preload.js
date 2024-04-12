@@ -9,5 +9,10 @@ contextBridge.exposeInMainWorld('api', {
       callback(fileList);
     });
   },
+  unsubscribeToFileChanges: (callback) => {
+    ipcRenderer.removeListener('fileListChanged', callback);
+  },
   readFile: (filePath) => fs.readFileSync(filePath, 'utf-8'),
+  selectWorkingDirectory: () => ipcRenderer.invoke('selectWorkingDirectory'),
+  setWorkingDirectory: (directory) => ipcRenderer.send('setWorkingDirectory', directory),
 });

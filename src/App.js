@@ -6,17 +6,6 @@ import CodeDisplay from './components/CodeDisplay';
 const App = () => {
   const [fileList, setFileList] = useState([]);
 
-  useEffect(() => {
-    const fetchFileList = async () => {
-      const list = await window.api.getFileList();
-      setFileList(list);
-    };
-
-    fetchFileList();
-
-    window.api.subscribeToFileChanges(handleFileChanges);
-  }, []);
-
   const handleFileChanges = async (updatedFileList) => {
     setFileList(currentFileList => {
       const mergedFileList = mergeFileLists(currentFileList, updatedFileList);
@@ -56,6 +45,17 @@ const App = () => {
   
     fileList.forEach(updateContent);
   };
+
+  useEffect(() => {
+    window.api.getFileList().then(setFileList);  // Initial fetch only
+
+    window.api.subscribeToFileChanges(handleFileChanges);
+
+    return () => {
+      window.api.unsubscribeToFileChanges(handleFileChanges);  // Clean up the subscription
+    };
+  }, []);
+
 
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>

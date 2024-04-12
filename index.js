@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron/main');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron/main');
 const path = require('path');
 const fs = require('fs');
 const ignore = require('ignore');
@@ -45,28 +45,67 @@ if (fs.existsSync(gitignorePath)) {
   ignoreInstance.add(gitignoreContent);
 }
 
+
+// --------------------- FILE WATCHING LOGIC ---------------------
+
+let currentWorkingDirectory = process.cwd();
+let fileWatcher = null;
+
 // Handle the getFileList IPC channel
 ipcMain.handle('getFileList', async (event) => {
-  const files = (await glob('**', { mark: true })).filter(file => file !== './');
-  const filteredFiles = ignoreInstance.filter(files);
-  const fileList = buildFileTree(filteredFiles);
+  const fileList = await fetchAndUpdateFileList(currentWorkingDirectory);
+  startWatching(currentWorkingDirectory);
   return fileList;
 });
 
-// Watch for file changes and send updates to the renderer process
-const watchedDirectory = process.cwd();
-fs.watch(watchedDirectory, { recursive: true }, (eventType, filename) => {
-  if (eventType === 'change' || eventType === 'rename') {
-    glob('**', { mark: true }).then((files) => {
-      files = files.filter(file => file !== './');
-      const filteredFiles = ignoreInstance.filter(files);
-      const fileList = buildFileTree(filteredFiles);
-      BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
-    }).catch((err) => {
-      throw err;
-    });
+// Handle the setWorkingDirectory IPC channel
+ipcMain.handle('selectWorkingDirectory', async () => {
+  const { filePaths } = await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+  });
+
+  if (filePaths && filePaths.length > 0) {
+    return filePaths[0];
   }
+
+  return null;
 });
+
+ipcMain.on('setWorkingDirectory', (event, directory) => {
+  currentWorkingDirectory = directory;  // Update the current working directory globally
+  startWatching(directory);
+  fetchAndUpdateFileList(directory);  // Fetch and update file list immediately on directory change
+});
+
+function startWatching(directory) {
+  stopWatching();
+  fileWatcher = fs.watch(directory, { recursive: true }, (eventType, filename) => {
+    if (eventType === 'change' || eventType === 'rename') {
+      fetchAndUpdateFileList(directory);  // Use centralized logic to update file list
+    }
+  });
+}
+
+async function fetchAndUpdateFileList(directory) {
+  try {
+    let files = await glob('**', { cwd: directory, mark: true });
+    files = files.filter(file => file !== './');
+    const filteredFiles = ignoreInstance.filter(files);
+    const fileList = buildFileTree(filteredFiles);
+    BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
+    return fileList;
+  } catch (err) {
+    console.error('Error updating file list:', err);
+    throw err;
+  }
+}
+
+function stopWatching(fileWatcher) {
+  if (fileWatcher) {
+    fileWatcher.close();
+    fileWatcher = null;
+  }
+}
 
 // Function to build the file tree structure from the filtered file list
 function buildFileTree(files) {
@@ -80,7 +119,7 @@ function buildFileTree(files) {
 
     const fileItem = {
       name: parsedPath.base,
-      path: file,
+      path: path.join(currentWorkingDirectory, file),
       checked: false,
       content: null,
     };
