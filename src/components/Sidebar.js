@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import { Box, Typography, Switch, Button } from '@mui/joy';
+import { Box, Switch, Button } from '@mui/joy';
 import FileTree from './FileTree';
 
-const Sidebar = ({ fileList, setFileList, readFile }) => {
+const Sidebar = ({ fileList, updateFileList, readFile }) => {
   const [asciiMode, setAsciiMode] = useState(false);
 
   const handleSelectWorkingDirectory = async () => {
     const selectedDirectory = await window.api.selectWorkingDirectory();
     if (selectedDirectory) {
-      console.log(selectedDirectory);
-      // Emit an event to the main process to update the working directory
       window.api.setWorkingDirectory(selectedDirectory);
     }
   };
@@ -27,7 +25,12 @@ const Sidebar = ({ fileList, setFileList, readFile }) => {
           onChange={(event) => setAsciiMode(event.target.checked)}
         />
       </Box>
-      <FileTree fileList={fileList} setFileList={setFileList} readFile={readFile} asciiMode={asciiMode} />
+      <FileTree
+        fileList={fileList}
+        updateFileList={updateFileList}
+        readFile={readFile}
+        asciiMode={asciiMode}
+      />
     </Box>
   );
 };

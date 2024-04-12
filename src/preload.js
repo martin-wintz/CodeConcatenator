@@ -4,12 +4,13 @@ const path = require('path');
 
 contextBridge.exposeInMainWorld('api', {
   getFileList: () => ipcRenderer.invoke('getFileList'),
-  subscribeToFileChanges: (callback) => {
+  updateFileList: (updatedFileList) => ipcRenderer.invoke('updateFileList', updatedFileList),
+  subscribeToFileListChanges: (callback) => {
     ipcRenderer.on('fileListChanged', (event, fileList) => {
       callback(fileList);
     });
   },
-  unsubscribeToFileChanges: (callback) => {
+  unsubscribeToFileListChanges: (callback) => {
     ipcRenderer.removeListener('fileListChanged', callback);
   },
   readFile: (filePath) => fs.readFileSync(filePath, 'utf-8'),

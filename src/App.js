@@ -6,60 +6,35 @@ import CodeDisplay from './components/CodeDisplay';
 const App = () => {
   const [fileList, setFileList] = useState([]);
 
-  const handleFileChanges = async (updatedFileList) => {
-    setFileList(currentFileList => {
-      const mergedFileList = mergeFileLists(currentFileList, updatedFileList);
-      updateFileContents(mergedFileList);
-      return mergedFileList;
-    });
-  };
-
-  const updateFileItem = (oldItem, newItem) => {
-    newItem.checked = oldItem.checked;
-    newItem.collapsed = oldItem.collapsed;
-  };
-
-  const mergeFileLists = (oldList, newList) => {
-    const oldItemsMap = new Map(oldList.map(item => [item.path, item]));
-    return newList.map(newItem => {
-      const oldItem = oldItemsMap.get(newItem.path);
-      if (oldItem) {
-        updateFileItem(oldItem, newItem);
-        if (oldItem.children && newItem.children) {
-          newItem.children = mergeFileLists(oldItem.children, newItem.children);
-        }
-      }
-      return newItem;
-    });
-  };  
-
-  const updateFileContents = (fileList) => {
-    const updateContent = (file) => {
-      if (file.checked) {
-        file.content = window.api.readFile(file.path);
-      }
-      if (file.children) {
-        file.children.forEach(updateContent);
-      }
-    };
-  
-    fileList.forEach(updateContent);
-  };
-
   useEffect(() => {
-    window.api.getFileList().then(setFileList);  // Initial fetch only
-
-    window.api.subscribeToFileChanges(handleFileChanges);
-
-    return () => {
-      window.api.unsubscribeToFileChanges(handleFileChanges);  // Clean up the subscription
+    const fetchInitialFileList = async () => {
+      const initialFileList = await window.api.getFileList();
+      setFileList(initialFileList);
     };
+
+    fetchInitialFileList();
+
+    const handleFileListChanges = (updatedFileList) => {
+      setFileList(updatedFileList);
+    };
+
+      // Note that the source of truth for the fileList is in the main process.
+      // setFileList should only be passed as a callback to subscribeToFileListChanges
+      // and never called directly in the UI
+      window.api.subscribeToFileListChanges(handleFileListChanges);
   }, []);
 
+  const updateFileList = async (updatedFileList) => {
+    await window.api.updateFileList(updatedFileList);
+  };
 
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>
-      <Sidebar fileList={fileList} setFileList={setFileList} readFile={window.api.readFile} />
+      <Sidebar
+        fileList={fileList}
+        updateFileList={updateFileList}
+        readFile={window.api.readFile}
+      />
       <Box sx={{ flex: 1, p: 2 }}>
         <Typography level="h1">CodeConcatenator</Typography>
         <CodeDisplay fileList={fileList} />

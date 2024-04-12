@@ -5,6 +5,13 @@ const ignore = require('ignore');
 const { glob } = require('glob');
 
 
+const gitignorePath = path.join(process.cwd(), '.gitignore');
+const ignoreInstance = ignore();
+let currentWorkingDirectory = null;
+let fileWatcher = null;
+let fileList = [];
+
+
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
@@ -21,9 +28,14 @@ const createWindow = () => {
 };
 
 app.whenReady().then(() => {
+  currentWorkingDirectory = process.cwd();
+  fileList = fetchFileList();
+  fileWatcher = startWatching();
+
   createWindow();
   
   app.on('activate', () => {
+
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
@@ -36,29 +48,18 @@ app.on('window-all-closed', () => {
   }
 });
 
-// Load the .gitignore file and create an ignore instance
-const gitignorePath = path.join(process.cwd(), '.gitignore');
-const ignoreInstance = ignore();
-
-if (fs.existsSync(gitignorePath)) {
-  const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
-  ignoreInstance.add(gitignoreContent);
-}
-
-
 // --------------------- FILE WATCHING LOGIC ---------------------
 
-let currentWorkingDirectory = process.cwd();
-let fileWatcher = null;
 
-// Handle the getFileList IPC channel
 ipcMain.handle('getFileList', async (event) => {
-  const fileList = await fetchAndUpdateFileList(currentWorkingDirectory);
-  startWatching(currentWorkingDirectory);
   return fileList;
 });
 
-// Handle the setWorkingDirectory IPC channel
+ipcMain.handle('updateFileList', async (event, updatedFileList) => {
+  fileList = updatedFileList;
+  BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
+});
+
 ipcMain.handle('selectWorkingDirectory', async () => {
   const { filePaths } = await dialog.showOpenDialog({
     properties: ['openDirectory'],
@@ -71,33 +72,48 @@ ipcMain.handle('selectWorkingDirectory', async () => {
   return null;
 });
 
-ipcMain.on('setWorkingDirectory', (event, directory) => {
+ipcMain.on('setWorkingDirectory', async (event, directory) => {
+  stopWatching();
+
   currentWorkingDirectory = directory;  // Update the current working directory globally
-  startWatching(directory);
-  fetchAndUpdateFileList(directory);  // Fetch and update file list immediately on directory change
+  fileList = await fetchFileList();
+  BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
+
+  startWatching();
 });
 
-function startWatching(directory) {
-  stopWatching();
-  fileWatcher = fs.watch(directory, { recursive: true }, (eventType, filename) => {
+// Load the .gitignore file and create an ignore instance
+if (fs.existsSync(gitignorePath)) {
+  const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
+  ignoreInstance.add(gitignoreContent);
+}
+
+function startWatching() {
+  fileWatcher = fs.watch(currentWorkingDirectory, { recursive: true }, async (eventType, filename) => {
     if (eventType === 'change' || eventType === 'rename') {
-      fetchAndUpdateFileList(directory);  // Use centralized logic to update file list
+      const newFileList = await fetchFileList();
+      fileList = updateFileList(fileList, newFileList);
+      BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
     }
   });
 }
 
-async function fetchAndUpdateFileList(directory) {
+async function fetchFileList() {
   try {
-    let files = await glob('**', { cwd: directory, mark: true });
+    let files = await glob('**', { cwd: currentWorkingDirectory, mark: true });
     files = files.filter(file => file !== './');
     const filteredFiles = ignoreInstance.filter(files);
-    const fileList = buildFileTree(filteredFiles);
-    BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
-    return fileList;
+    return buildFileTree(filteredFiles);
   } catch (err) {
     console.error('Error updating file list:', err);
     throw err;
   }
+}
+
+function updateFileList(fileList, updatedFileList) {
+    fileList = mergeFileLists(fileList, updatedFileList);
+    updateFileContents(fileList);
+    return fileList;
 }
 
 function stopWatching(fileWatcher) {
@@ -152,3 +168,34 @@ function buildFileTree(files) {
 
   return fileTree;
 }
+
+// Function to merge file lists while maintaining checked state
+function mergeFileLists(oldList, newList) {
+  const oldItemsMap = new Map(oldList.map(item => [item.path, item]));
+  return newList.map(newItem => {
+    const oldItem = oldItemsMap.get(newItem.path);
+    if (oldItem) {
+      newItem.checked = oldItem.checked;
+      newItem.collapsed = oldItem.collapsed;
+      if (oldItem.children && newItem.children) {
+        newItem.children = mergeFileLists(oldItem.children, newItem.children);
+      }
+    }
+    return newItem;
+  });
+}
+
+// Function to update the contents of checked files
+function updateFileContents(fileList) {
+  const updateContent = (file) => {
+    if (file.checked) {
+      file.content = fs.readFileSync(file.path, 'utf-8');
+    }
+    if (file.children) {
+      file.children.forEach(updateContent);
+    }
+  };
+
+  fileList.forEach(updateContent);
+}
+

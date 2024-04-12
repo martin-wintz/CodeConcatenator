@@ -5,12 +5,12 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import useCopyToClipboard from '../hooks/useCopyToClipboard';
 import { fadeOut } from '../animations';
 
-const FileTree = ({ fileList, setFileList, readFile, asciiMode }) => {
+const FileTree = ({ fileList, updateFileList, readFile, asciiMode }) => {
   const [copyMessage, copyToClipboard] = useCopyToClipboard();
 
   const handleToggleExpand = (directory) => {
     directory.collapsed = !directory.collapsed;
-    setFileList([...fileList]);
+    updateFileList([...fileList]);
   };
 
   const handleCheckChange = async (file) => {
@@ -18,7 +18,7 @@ const FileTree = ({ fileList, setFileList, readFile, asciiMode }) => {
     if (file.checked && !file.content) {
       file.content = readFile(file.path);
     }
-    setFileList([...fileList]);
+    updateFileList([...fileList]);
   };
 
   const renderAsciiTree = (files, level = 0) => {
