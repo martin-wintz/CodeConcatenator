@@ -15,5 +15,6 @@ contextBridge.exposeInMainWorld('api', {
   },
   readFile: (filePath) => fs.readFileSync(filePath, 'utf-8'),
   selectWorkingDirectory: () => ipcRenderer.invoke('selectWorkingDirectory'),
+  getWorkingDirectory: () => ipcRenderer.invoke('getWorkingDirectory'),
   setWorkingDirectory: (directory) => ipcRenderer.send('setWorkingDirectory', directory),
 });

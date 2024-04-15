@@ -55,9 +55,13 @@ ipcMain.handle('getFileList', async (event) => {
   return fileList;
 });
 
-ipcMain.handle('updateFileList', async (event, updatedFileList) => {
+ipcMain.handle('updateFileList', (event, updatedFileList) => {
   fileList = updatedFileList;
   BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
+});
+
+ipcMain.handle('getWorkingDirectory', async (event) => {
+  return currentWorkingDirectory;
 });
 
 ipcMain.handle('selectWorkingDirectory', async () => {

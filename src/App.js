@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/joy';
 import Sidebar from './components/Sidebar';
+import TopBar from './components/TopBar';
 import CodeDisplay from './components/CodeDisplay';
 
 const App = () => {
   const [fileList, setFileList] = useState([]);
+  const [currentDirectory, setCurrentDirectory] = useState('');
 
   useEffect(() => {
     const fetchInitialFileList = async () => {
       const initialFileList = await window.api.getFileList();
       setFileList(initialFileList);
+
+      const initialWorkingDirectory = await window.api.getWorkingDirectory();
+      setCurrentDirectory(initialWorkingDirectory);
     };
 
     fetchInitialFileList();
@@ -28,8 +33,21 @@ const App = () => {
     await window.api.updateFileList(updatedFileList);
   };
 
+  const handleSelectWorkingDirectory = async () => {
+    const selectedDirectory = await window.api.selectWorkingDirectory();
+    if (selectedDirectory) {
+      setCurrentDirectory(selectedDirectory);
+      window.api.setWorkingDirectory(selectedDirectory);
+    }
+  }
+
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
+  <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <TopBar
+      currentDirectory={currentDirectory}
+      onSelectWorkingDirectory={handleSelectWorkingDirectory}
+    />
+    <Box sx={{ display: 'flex', flex: 1 }}>
       <Sidebar
         fileList={fileList}
         updateFileList={updateFileList}
@@ -40,7 +58,8 @@ const App = () => {
         <CodeDisplay fileList={fileList} />
       </Box>
     </Box>
-  );
+  </Box>
+);
 };
 
 export default App;
