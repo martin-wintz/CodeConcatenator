@@ -6,7 +6,7 @@ const Sidebar = ({ fileList, updateFileList, readFile }) => {
   const [asciiMode, setAsciiMode] = useState(false);
 
   return (
-    <Box sx={{ width: 240, bgcolor: 'background.surface', borderRight: '1px solid', borderColor: 'divider' }}>
+    <Box sx={{ width: 320, bgcolor: 'background.surface', borderRight: '1px solid', borderColor: 'divider', overflow: 'scroll' }}>
       <Box sx={{ p: 2 }}>
         <Switch
           label="ASCII Mode"

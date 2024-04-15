@@ -54,7 +54,6 @@ const App = () => {
         readFile={window.api.readFile}
       />
       <Box sx={{ flex: 1, p: 2 }}>
-        <Typography level="h1">CodeConcatenator</Typography>
         <CodeDisplay fileList={fileList} />
       </Box>
     </Box>

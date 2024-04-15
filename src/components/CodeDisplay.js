@@ -31,7 +31,7 @@ const CodeDisplay = ({ fileList }) => {
   
   return (
     <Box>
-      <Box component="textarea" sx={{ width: '100%', height: 400, mt: 2 }} value={content} readOnly />
+      <Box component="textarea" sx={{ width: '100%', height: 700, mt: 2 }} value={content} readOnly />
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Button variant="solid" onClick={handleCopy}>

@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const ignore = require('ignore');
 const { glob } = require('glob');
+const { type } = require('os');
 
 
 const gitignorePath = path.join(process.cwd(), '.gitignore');
@@ -14,8 +15,8 @@ let fileList = [];
 
 const createWindow = () => {
   const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 1000,
     webPreferences: {
       preload: path.join(__dirname, 'src', 'preload.js'),
       nodeIntegration: true,
@@ -175,6 +176,7 @@ function buildFileTree(files) {
 
 // Function to merge file lists while maintaining checked state
 function mergeFileLists(oldList, newList) {
+
   const oldItemsMap = new Map(oldList.map(item => [item.path, item]));
   return newList.map(newItem => {
     const oldItem = oldItemsMap.get(newItem.path);
