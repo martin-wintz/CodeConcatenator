@@ -9,6 +9,7 @@ const { type } = require('os');
 const gitignorePath = path.join(process.cwd(), '.gitignore');
 const ignoreInstance = ignore();
 let currentWorkingDirectory = null;
+let storedWorkingDirectory = null; // TODO
 let fileWatcher = null;
 let fileList = [];
 
@@ -28,10 +29,12 @@ const createWindow = () => {
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
 };
 
-app.whenReady().then(() => {
-  currentWorkingDirectory = process.cwd();
-  fileList = fetchFileList();
-  fileWatcher = startWatching();
+app.whenReady().then(async () => {
+  if (storedWorkingDirectory) {
+    currentWorkingDirectory = process.cwd();
+    fileList = await fetchFileList();
+    fileWatcher = startWatching();
+  }
 
   createWindow();
   
@@ -176,7 +179,6 @@ function buildFileTree(files) {
 
 // Function to merge file lists while maintaining checked state
 function mergeFileLists(oldList, newList) {
-
   const oldItemsMap = new Map(oldList.map(item => [item.path, item]));
   return newList.map(newItem => {
     const oldItem = oldItemsMap.get(newItem.path);

@@ -3,6 +3,7 @@ import { Box, Typography } from '@mui/joy';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import CodeDisplay from './components/CodeDisplay';
+import Placeholder from './components/Placeholder';
 
 const App = () => {
   const [fileList, setFileList] = useState([]);
@@ -42,23 +43,24 @@ const App = () => {
   }
 
   return (
-  <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-    <TopBar
-      currentDirectory={currentDirectory}
-      onSelectWorkingDirectory={handleSelectWorkingDirectory}
-    />
-    <Box sx={{ display: 'flex', flex: 1 }}>
-      <Sidebar
-        fileList={fileList}
-        updateFileList={updateFileList}
-        readFile={window.api.readFile}
-      />
-      <Box sx={{ flex: 1, p: 2 }}>
-        <CodeDisplay fileList={fileList} />
-      </Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <TopBar currentDirectory={currentDirectory} onSelectWorkingDirectory={handleSelectWorkingDirectory} />
+      {currentDirectory ? (
+        <Box sx={{ display: 'flex', flex: 1 }}>
+          <Sidebar 
+            fileList={fileList} 
+            readFile={window.api.readFile} 
+            updateFileList={updateFileList}
+          />
+          <Box sx={{ flex: 1, p: 2 }}>
+            <CodeDisplay fileList={fileList} />
+          </Box>
+        </Box>
+      ) : (
+        <Placeholder />
+      )}
     </Box>
-  </Box>
-);
+  );
 };
 
 export default App;
