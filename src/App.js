@@ -8,6 +8,7 @@ import Placeholder from './components/Placeholder';
 const App = () => {
   const [fileList, setFileList] = useState([]);
   const [currentDirectory, setCurrentDirectory] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchInitialFileList = async () => {
@@ -16,6 +17,8 @@ const App = () => {
 
       const initialWorkingDirectory = await window.api.getWorkingDirectory();
       setCurrentDirectory(initialWorkingDirectory);
+
+      setIsLoading(false);
     };
 
     fetchInitialFileList();
@@ -40,6 +43,10 @@ const App = () => {
       setCurrentDirectory(selectedDirectory);
       window.api.setWorkingDirectory(selectedDirectory);
     }
+  }
+
+  if (isLoading) {
+    return <Box></Box>
   }
 
   return (

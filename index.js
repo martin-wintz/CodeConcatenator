@@ -13,6 +13,27 @@ let storedWorkingDirectory = null; // TODO
 let fileWatcher = null;
 let fileList = [];
 
+const storagePath = path.join(app.getPath('userData'), 'settings.json');
+
+function saveWorkingDirectory(directory) {
+  try {
+    fs.writeFileSync(storagePath, JSON.stringify({ workingDirectory: directory }));
+  } catch (err) {
+    console.error('Failed to save working directory:', err);
+  }
+}
+
+function loadWorkingDirectory() {
+  try {
+    if (fs.existsSync(storagePath)) {
+      const data = JSON.parse(fs.readFileSync(storagePath, 'utf-8'));
+      return data.workingDirectory;
+    }
+  } catch (err) {
+    console.error('Failed to load working directory:', err);
+  }
+  return null;
+}
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -30,8 +51,10 @@ const createWindow = () => {
 };
 
 app.whenReady().then(async () => {
-  if (storedWorkingDirectory) {
-    currentWorkingDirectory = process.cwd();
+  storedWorkingDirectory = loadWorkingDirectory();
+
+  if (storedWorkingDirectory && fs.existsSync(storedWorkingDirectory)) {
+    currentWorkingDirectory = storedWorkingDirectory;
     fileList = await fetchFileList();
     fileWatcher = startWatching();
   }
@@ -83,12 +106,15 @@ ipcMain.handle('selectWorkingDirectory', async () => {
 ipcMain.on('setWorkingDirectory', async (event, directory) => {
   stopWatching();
 
-  currentWorkingDirectory = directory;  // Update the current working directory globally
-  fileList = await fetchFileList();
-  BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
-
-  startWatching();
+  if (fs.existsSync(directory)) {
+    currentWorkingDirectory = directory;
+    fileList = await fetchFileList();
+    BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
+    startWatching();
+    saveWorkingDirectory(directory);
+  }
 });
+
 
 // Load the .gitignore file and create an ignore instance
 if (fs.existsSync(gitignorePath)) {
