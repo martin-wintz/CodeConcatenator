@@ -4,6 +4,7 @@ const fs = require('fs');
 const ignore = require('ignore');
 const { glob } = require('glob');
 const { type } = require('os');
+const { debounce } = require('./src/utils');
 
 
 const gitignorePath = path.join(process.cwd(), '.gitignore');
@@ -39,6 +40,7 @@ const createWindow = () => {
   const win = new BrowserWindow({
     width: 1200,
     height: 1000,
+    icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'src', 'preload.js'),
       nodeIntegration: true,
@@ -51,6 +53,7 @@ const createWindow = () => {
 };
 
 app.whenReady().then(async () => {
+
   storedWorkingDirectory = loadWorkingDirectory();
 
   if (storedWorkingDirectory && fs.existsSync(storedWorkingDirectory)) {
@@ -123,15 +126,25 @@ if (fs.existsSync(gitignorePath)) {
 } else {
   // Default ignore pattern for hidden files (files starting with .)
   ignoreInstance.add('**/.*');
+  ignoreInstance.add('node_modules/');
 }
 
+const fileChangeHandler = debounce(async () => {
+  console.log('Debounced file change detected.');
+  const newFileList = await fetchFileList();
+  fileList = updateFileList(fileList, newFileList);
+  BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
+}, 300); // Debounce for 300 milliseconds
+
 function startWatching() {
-  fileWatcher = fs.watch(currentWorkingDirectory, { recursive: true }, async (eventType, filename) => {
-    if (eventType === 'change' || eventType === 'rename') {
-      const newFileList = await fetchFileList();
-      fileList = updateFileList(fileList, newFileList);
-      BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
-    }
+  if (fileWatcher) {
+      fileWatcher.close();  // Ensure no duplicates
+  }
+  fileWatcher = fs.watch(currentWorkingDirectory, { recursive: true }, (eventType, filename) => {
+      if (!ignoreInstance.ignores(filename)) { // Check if the file should be ignored
+          console.log('File changed:', filename);
+          fileChangeHandler();
+      }
   });
 }
 
