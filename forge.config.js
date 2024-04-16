@@ -4,6 +4,7 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: true,
+    icon: 'assets/icon',
   },
   rebuildConfig: {},
   makers: [
@@ -12,8 +13,22 @@ module.exports = {
       config: {},
     },
     {
-      name: '@electron-forge/maker-zip',
-      platforms: ['darwin', 'linux'],
+      name: '@electron-forge/maker-deb',
+      config: {
+        options: {
+          maintainer: 'Martin Wintz',
+          homepage: 'https://github.com/martin-wintz/CodeConcatenator',
+        },
+      },
+    },
+    {
+      name: '@electron-forge/maker-dmg',
+      platforms: ['darwin'],  // This specifies that the dmg maker is only used for macOS
+      config: {
+        // Configuration options for the dmg maker
+        // You can specify more options here according to your needs
+        // For example, to set a background, icon positions, etc.
+      }
     },
   ],
   plugins: [
