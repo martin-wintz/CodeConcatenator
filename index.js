@@ -3,40 +3,37 @@ const path = require('path');
 const fs = require('fs');
 const ignore = require('ignore');
 const { glob } = require('glob');
-const { type } = require('os');
 const { debounce } = require('./src/utils');
-
+const { config } = require('process');
 
 const gitignorePath = path.join(process.cwd(), '.gitignore');
 const ignoreInstance = ignore();
 let currentWorkingDirectory = null;
-let storedWorkingDirectory = null; // TODO
 let fileWatcher = null;
 let fileList = [];
 
-const storagePath = path.join(app.getPath('userData'), 'settings.json');
+const configPath = path.join(app.getPath('userData'), 'appConfig.json');
 
-function saveWorkingDirectory(directory) {
+function readConfig() {
   try {
-    fs.writeFileSync(storagePath, JSON.stringify({ workingDirectory: directory }));
-  } catch (err) {
-    console.error('Failed to save working directory:', err);
-  }
-}
-
-function loadWorkingDirectory() {
-  try {
-    if (fs.existsSync(storagePath)) {
-      const data = JSON.parse(fs.readFileSync(storagePath, 'utf-8'));
-      return data.workingDirectory;
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     }
   } catch (err) {
-    console.error('Failed to load working directory:', err);
+    console.error('Failed to read config:', err);
   }
-  return null;
+  return {};
 }
 
-const createWindow = () => {
+function writeConfig(config) {
+  try {
+    fs.writeFileSync(configPath, JSON.stringify(config));
+  } catch (err) {
+    console.error('Failed to write config:', err);
+  }
+}
+
+const createWindow = async () => {
   const win = new BrowserWindow({
     width: 1200,
     height: 1000,
@@ -50,26 +47,31 @@ const createWindow = () => {
   });
   
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
-};
 
-app.whenReady().then(async () => {
-
-  storedWorkingDirectory = loadWorkingDirectory();
-
-  if (storedWorkingDirectory && fs.existsSync(storedWorkingDirectory)) {
-    currentWorkingDirectory = storedWorkingDirectory;
-    fileList = await fetchFileList();
-    fileWatcher = startWatching();
+  // Checking if the app closed properly
+  const config = readConfig();
+  if (config.wasClosedProperly) {
+    currentWorkingDirectory = config.workingDirectory;
+    if (currentWorkingDirectory && fs.existsSync(currentWorkingDirectory)) {
+      fileList = await fetchFileList();
+      fileWatcher = startWatching();
+    }
+  } else {
+    console.log("App did not close properly last time.");
   }
 
-  createWindow();
-  
-  app.on('activate', () => {
+  // Reset the flag
+  config.wasClosedProperly = false;
+  writeConfig(config);
+};
 
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+app.on('ready', createWindow);
+
+app.on('will-quit', () => {
+  const config = readConfig();
+  config.wasClosedProperly = true;
+  config.workingDirectory = currentWorkingDirectory;
+  writeConfig(config);
 });
 
 app.on('window-all-closed', () => {
@@ -114,7 +116,9 @@ ipcMain.on('setWorkingDirectory', async (event, directory) => {
     fileList = await fetchFileList();
     BrowserWindow.getAllWindows()[0].webContents.send('fileListChanged', fileList);
     startWatching();
-    saveWorkingDirectory(directory);
+    const config = readConfig();
+    config.workingDirectory = currentWorkingDirectory;
+    writeConfig(config);
   }
 });
 
