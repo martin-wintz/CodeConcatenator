@@ -120,6 +120,9 @@ ipcMain.on('setWorkingDirectory', async (event, directory) => {
 if (fs.existsSync(gitignorePath)) {
   const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
   ignoreInstance.add(gitignoreContent);
+} else {
+  // Default ignore pattern for hidden files (files starting with .)
+  ignoreInstance.add('**/.*');
 }
 
 function startWatching() {
