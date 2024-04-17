@@ -76,7 +76,7 @@ const FileTree = ({ fileList, updateFileList, readFile, asciiMode }) => {
     <Box sx={{ p: 2 }}>
       {asciiMode ? (
         <>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', mb: 1 }}>
             <Button variant="solid" onClick={handleCopy}>
               Copy
             </Button>
