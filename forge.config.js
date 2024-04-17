@@ -31,6 +31,18 @@ module.exports = {
       }
     },
   ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'martin-wintz',
+          name: 'CodeConcatenator'
+        },
+        authToken: process.env.GITHUB_TOKEN // It's recommended to use an environment variable for tokens
+      }
+    }
+  ],
   plugins: [
     {
       name: '@electron-forge/plugin-auto-unpack-natives',
