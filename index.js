@@ -45,6 +45,10 @@ const createWindow = async () => {
       sandbox: false,
     }
   });
+
+  win.on('closed', () => {
+    app.quit();
+  });      
   
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
 
