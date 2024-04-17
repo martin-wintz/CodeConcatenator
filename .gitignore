@@ -110,3 +110,4 @@ uninstaller.exe
 
 # VSCode
 .vscode/*
+.DS_Store
